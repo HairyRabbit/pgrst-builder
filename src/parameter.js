@@ -16,12 +16,13 @@
 import { fail } from '@rabbitcc/logger'
 
 export default function params(...args: Array<[string, string]>) {
-    return function(builder: Builder): Builder {
-        return args.reduce((builder, params) => {
-            builder.params.set.apply(builder.params, params)
-            return builder
-        }, builder)
-    }
+  return function(builder: Builder): Builder {
+    return args.reduce((builder, params) => {
+      const qs = builder.url.searchParams
+      qs.set.apply(qs, params)
+      return builder
+    }, builder)
+  }
 }
 
 export function set(key: string | string => string,

@@ -83,17 +83,18 @@ export default function request(method: string, headers: Headers = {}) {
  * export helpers and alias
  */
 export const get          = request('get')
-export const query        = request('get')
-export const select       = request('get')
 export const create       = request('post', { 'Prefer': 'return=representation' })
-export const insert       = request('post', { 'Prefer': 'return=representation' })
 export const update       = request('put', { 'Prefer': 'return=representation' })
 export const upsert       = request('put', { 'Prefer': 'return=representation' })
 export const destory      = request('delete', { 'Prefer': 'return=representation' })
-export const remove       = request('delete', { 'Prefer': 'return=representation' })
 export const create_many  = request('post', { 'Prefer': 'return=representation' })
-export const insert_many  = request('post', { 'Prefer': 'return=representation' })
 export const update_many  = request('post', { 'Prefer': 'return=representation' })
 export const upsert_many  = request('post', { 'Prefer': 'return=representation' })
 export const destory_many = request('delete', { 'Prefer': 'return=representation' })
-export const remove_many  = request('delete', { 'Prefer': 'return=representation' })
+
+export const query        = get
+export const select       = get
+export const insert       = create
+export const remove       = destory
+export const insert_many  = create_many
+export const remove_many  = destory_many

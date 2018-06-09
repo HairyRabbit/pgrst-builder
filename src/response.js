@@ -10,8 +10,7 @@
  * 2. received code not be 20X(50X or 40X).
  * 3. received successful, but error filed not be `null`
  *
- * PostgREST HTTP status codes
- * @link {https://postgrest.org/en/stable/api.html#http-status-codes}
+ * [PostgREST HTTP status codes](https://postgrest.org/en/stable/api.html#http-status-codes)
  *
  * +---------------+-------------------------------+
  * | code          | description                   |
@@ -49,15 +48,16 @@
  */
 
 import { log, fail } from '@rabbitcc/logger'
-
-export default function response(res: Response) {
-
-}
+import type { ApiResponse } from './'
 
 /**
- * Handle runtime errors or connect failed:
+ * Handle fetch request errors, something happen like:
  *
- * @exmaple
+ *   - network can't connect
+ *   - CSP by `connect-src 'self'`
+ *   - code bugs when call `fetch()`
+ *
+ * Example:
  *
  * ```js
  * // Throw when call fetch error
@@ -74,21 +74,53 @@ export default function response(res: Response) {
  * //=> TypeError: Failed to fetch
  * ```
  */
-export function hd_req({ onRequestError }) {
-  return function hd_req1(err: Error) {
+export function proc_req(proc: Function) {
+  return function proc_req1(err: Error): Promise<*> {
     /**
      * handle CSP or network connect error
      */
     if(/Failed to fetch/.test(err.message)) {
-      onRequestError({ type: 'browser' })
+      return proc({ type: 'client-internal' })
     }
+
+    return proc({ type: 'client-runtime' })
   }
 }
 
-export function hd_code(code: number): any {
+/**
+ * Handle response errors, the status code not 2XX. If passed,
+ * apply parser for response body by content type, default to
+ * `res.json()`
+ */
+export function proc_res(proc: Function, parse?: Response => Promise<*>): Promise<*> {
+  return function proc_res(res: Response): void {
+    const { ok, code, headers } = res
 
+    if(!ok) {
+      return proc({ type: 'server-runtime' })
+    }
+
+    if(parse) {
+      if('function' === typeof parse) {
+        return parse(res)
+      } else if(null === parse) {
+        return null
+      }
+    }
+
+    return res.json()
+  }
 }
 
-export function hd_create_failed() {
+/**
+ * Handle logic errors, response has a error
+ */
+export function proc_err(proc: Function) {
+  return function proc_err(data: ApiResponse): Promise<*> {
+    if(data.error) {
+      return proc(data.error)
+    }
 
+    return data.data
+  }
 }

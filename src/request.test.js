@@ -5,7 +5,7 @@
 import 'isomorphic-fetch'
 import { log } from '@rabbitcc/logger'
 import nock from 'nock'
-import Builder from './builder'
+import build from './builder'
 import params, { not, eq } from './parameter'
 import request, {
   get,
@@ -34,7 +34,7 @@ test('should const request', () => {
     .reply(200)
 
   return expect(
-    request('get', {})()(new Builder())
+    request('get', {})()(build())
       .then(res => [
         res.status,
         res.url
@@ -60,7 +60,7 @@ test('should get', () => {
     })
 
   return expect(
-    get(params(['bar', eq(42)]))(new Builder('/foo'))
+    get(params(['bar', eq(42)]))(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -86,7 +86,7 @@ test('should query', () => {
     })
 
   return expect(
-    query(params(['bar', not(eq(42))]))(new Builder('/foo'))
+    query(params(['bar', not(eq(42))]))(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -112,7 +112,7 @@ test('should select', () => {
     })
 
   return expect(
-    select(params(['bar', not(eq(42))]))(new Builder('/foo'))
+    select(params(['bar', not(eq(42))]))(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -136,7 +136,7 @@ test('should create', () => {
     .reply(204, {})
 
   return expect(
-    create(params())(new Builder('/foo'))
+    create(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -158,7 +158,7 @@ test('should insert', () => {
     .reply(204, {})
 
   return expect(
-    insert(params())(new Builder('/foo'))
+    insert(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -180,7 +180,7 @@ test('should update', () => {
     .reply(204, {})
 
   return expect(
-    update(params())(new Builder('/foo'))
+    update(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -202,7 +202,7 @@ test('should upsert', () => {
     .reply(204, {})
 
   return expect(
-    upsert(params())(new Builder('/foo'))
+    upsert(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -224,7 +224,7 @@ test('should destory', () => {
     .reply(204, {})
 
   return expect(
-    destory(params())(new Builder('/foo'))
+    destory(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -246,7 +246,7 @@ test('should remove', () => {
     .reply(204, {})
 
   return expect(
-    remove(params())(new Builder('/foo'))
+    remove(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -272,7 +272,7 @@ test('should create many', () => {
     .reply(204, {})
 
   return expect(
-    create_many(params())(new Builder('/foo'))
+    create_many(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -294,7 +294,7 @@ test('should insert many', () => {
     .reply(204, {})
 
   return expect(
-    insert_many(params())(new Builder('/foo'))
+    insert_many(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -316,7 +316,7 @@ test('should update many', () => {
     .reply(204, {})
 
   return expect(
-    update_many(params())(new Builder('/foo'))
+    update_many(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -338,7 +338,7 @@ test('should upsert many', () => {
     .reply(204, {})
 
   return expect(
-    upsert_many(params())(new Builder('/foo'))
+    upsert_many(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -360,7 +360,7 @@ test('should destory many', () => {
     .reply(204, {})
 
   return expect(
-    destory_many(params())(new Builder('/foo'))
+    destory_many(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -382,7 +382,7 @@ test('should remove many', () => {
     .reply(204, {})
 
   return expect(
-    remove_many(params())(new Builder('/foo'))
+    remove_many(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,

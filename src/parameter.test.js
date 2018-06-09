@@ -2,15 +2,18 @@
  * @jest
  */
 
-import Builder from './builder'
+import build from './builder'
 import params, * as p from './parameter'
 
+/**
+ * bind to builder
+ */
 test('should make params', () => {
-  const builder = new Builder()
+  const builder = build('qux')
   params(['foo', 'eq.42'], ['bar', 'not.gt.42'])(builder)
 
   expect(
-    builder.params.toString()
+    builder.url.searchParams.toString()
   ).toEqual(
     'foo=eq.42&bar=not.gt.42'
   )

@@ -92,12 +92,16 @@ export function proc_req(proc: Function) {
  * apply parser for response body by content type, default to
  * `res.json()`
  */
-export function proc_res(proc: Function, parse?: Response => Promise<*>): Promise<*> {
+export function proc_res(proc: Function,
+                         parse?: Response => Promise<*>): Promise<*> {
   return function proc_res(res: Response): void {
-    const { ok, code, headers } = res
+    const { ok, status, headers } = res
 
     if(!ok) {
-      return proc({ type: 'server-runtime' })
+      proc({
+        type: 'server-runtime',
+        error: status
+      })
     }
 
     if(parse) {
@@ -121,6 +125,6 @@ export function proc_err(proc: Function) {
       return proc(data.error)
     }
 
-    return data.data
+    return data.data || data
   }
 }

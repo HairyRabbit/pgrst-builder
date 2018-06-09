@@ -36,8 +36,8 @@ export default function request(method: string, headers: Headers = {}) {
    * ```
    */
   return function request1(params?: Builder => Builder,
-                           options?: Options = {},
-                           body?: string) {
+                           data?: string | object | FormData,
+                           options?: Options = {}) {
     /**
      * construct with builder
      *
@@ -56,6 +56,13 @@ export default function request(method: string, headers: Headers = {}) {
       if(params) {
         builder = params(builder)
       }
+
+      /**
+       * stringify body
+       */
+      const body = 'string' !== typeof data
+            ? JSON.stringify(data)
+            : data
 
       /**
        * apply to fetch

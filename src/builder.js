@@ -55,6 +55,12 @@ export class Build {
       conn({ protocol, host, port, username, password }),
       endpoint
     ))
+
+    /**
+     * export request api
+     */
+    this.get = this._request(request.get)
+    this.create = this._request(request.create)
   }
 
   /**
@@ -74,18 +80,13 @@ export class Build {
   /**
    * wrapped request and apply response
    */
-  _request(promise: Builder => Promise<Response>): Promise<*> {
-    return promise(this)
-      .then(response.proc_res(this.options.onResponseError))
-      .then(response.proc_err(this.options.onResponseFailed))
-      .catch(response.proc_req(this.options.onRequestError))
-  }
-
-  /**
-   * export request api
-   */
-  get(...args: Array<*>) {
-    return this._request(request.get.apply(null, ...args))
+  _request(req: Function) {
+    return (...args): Promise<*> => {
+      return req.apply(null, args)(this)
+        .then(response.proc_res(this.options.onResponseError))
+        .then(response.proc_err(this.options.onResponseFailed))
+        .catch(response.proc_req(this.options.onRequestError))
+    }
   }
 }
 

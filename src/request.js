@@ -5,8 +5,9 @@
  */
 
 import { log, fail } from '@rabbitcc/logger'
+import { Parser } from 'json2csv'
 import Builder from './builder'
-import type { Options } from './'
+import type { Options, OperationHeader } from './'
 
 /**
  * wrapped for many helpers with method and default headers
@@ -23,7 +24,7 @@ import type { Options } from './'
  *   - upsert_many
  *   - destory_many
  */
-export default function request(method: string, headers: Headers = {}) {
+export default function request(method: string, headers?: Headers = {}) {
   /**
    * construct request with params, also can override options at this level
    *
@@ -35,9 +36,7 @@ export default function request(method: string, headers: Headers = {}) {
    * request(params(['id', eq(3)])) //=> Builder => Promise<Response>
    * ```
    */
-  return function request1(params?: Builder => Builder,
-                           data?: string | object | FormData,
-                           options?: Options = {}) {
+  return function request1(data?: object, options?: Options = {}) {
     /**
      * construct with builder
      *
@@ -51,56 +50,71 @@ export default function request(method: string, headers: Headers = {}) {
      */
     return function request2(builder: Builder): Promise<Response> {
       /**
-       * set params to `builder.params` if provide
+       * combine options
        */
-      if(params) {
-        builder = params(builder)
-      }
-
-      /**
-       * stringify body
-       *
-       * looks like pgrst can't hold on json without stringify, see
-       * https://postgrest.org/en/stable/api.html#insertions-updates
-       */
-      const body = 'string' !== typeof data
-            ? JSON.stringify(data)
-            : data
-
-      /**
-       * apply to fetch
-       */
-      return fetch(builder.url.toString(), {
+      const fetch_opt = {
         /**
          * issue for `Set-Cookie` headers
          */
         method,
-        body,
         credentials: 'same-origin',
+        ...builder.options.fetch,
+        ...options,
         headers: {
           ...headers,
+          ...builder.options.fetch.headers,
           ...builder.options.headers,
           ...options.headers
-        },
-        ...builder.options,
-        ...options
-      })
+        }
+      }
+
+      /**
+       * handle body
+       *
+       * looks like pgrst can't hold on json without stringify, see
+       * https://postgrest.org/en/stable/api.html#insertions-updates
+       *
+       * bulk operation also supports CSV format, so should use
+       * csv for fast parse on server. want to use this feature,
+       * need enabled `PGRST_BUILD_CSV` env.
+       */
+      if(data) {
+        if(process.env.PGRST_BUILD_CSV &&
+           'text/csv' === fetch_opt.headers['Content-Type']) {
+          const { parse } = new Parser()
+
+          try {
+            fetch_opt.body = parse(data)
+          } catch(err) {
+            throw new Error(err)
+          }
+        } else {
+          fetch_opt.body = JSON.stringify(data)
+        }
+      }
+
+      /**
+       * apply to fetch
+       */
+      return fetch(builder.url.toString(), fetch_opt)
     }
   }
 }
+
+const oper = { 'Prefer': 'return=representation'}
 
 /**
  * export helpers and alias
  */
 export const get          = request('get')
-export const create       = request('post', { 'Prefer': 'return=representation' })
-export const update       = request('put', { 'Prefer': 'return=representation' })
-export const upsert       = request('put', { 'Prefer': 'return=representation' })
-export const destory      = request('delete', { 'Prefer': 'return=representation' })
-export const create_many  = request('post', { 'Prefer': 'return=representation' })
-export const update_many  = request('post', { 'Prefer': 'return=representation' })
-export const upsert_many  = request('post', { 'Prefer': 'return=representation' })
-export const destory_many = request('delete', { 'Prefer': 'return=representation' })
+export const create       = request('post', oper)
+export const update       = request('put', oper)
+export const upsert       = request('put', oper)
+export const destory      = request('delete', oper)
+export const create_many  = request('post', oper)
+export const update_many  = request('post', oper)
+export const upsert_many  = request('post', oper)
+export const destory_many = request('delete', oper)
 
 export const query        = get
 export const select       = get

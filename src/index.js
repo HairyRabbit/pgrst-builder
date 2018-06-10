@@ -27,7 +27,18 @@
  * Interface:
  *
  * ```js
+ * interface Builder {
+ *   endpoint: string,          // request endpoint
+ *   options: Options           // options, see below
+ *   params({                   // add query params
+ *     [key: string]: string
+ *   }): Builder
+ *   [requests](): Promise<Response>
+ * }
+ *
  * type Options = {
+ *   // connect options
+ *   protocol: string,
  *
  * }
  * ```
@@ -47,7 +58,8 @@ export type Options<T> = {
   host?: string,
   port?: ?(string | number),
   headers?: Headers,
-  parser?: Parser<T>
+  parser?: Parser<T>,
+  fetch?: Object
 }
 
 export type Connect = {
@@ -70,13 +82,15 @@ export const default_options: Options = {
   host: 'localhost',
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  fetch: {}
 }
 
 /**
  * custom errors
  *
- *
+ * RequestError - for fetch error
+ * ResponseError - for received failed
  */
 
 type RequestErrorOptions = {

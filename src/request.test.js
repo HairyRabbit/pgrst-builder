@@ -60,7 +60,7 @@ test('should get', () => {
     })
 
   return expect(
-    get(params(['bar', eq(42)]))(build('/foo'))
+    get()(params(['bar', eq(42)])(build('/foo')))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -86,7 +86,7 @@ test('should query', () => {
     })
 
   return expect(
-    query(params(['bar', not(eq(42))]))(build('/foo'))
+    query()(params(['bar', not(eq(42))])(build('/foo')))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -112,7 +112,7 @@ test('should select', () => {
     })
 
   return expect(
-    select(params(['bar', not(eq(42))]))(build('/foo'))
+    select()(params(['bar', not(eq(42))])(build('/foo')))
       .then(res => Promise.all([
         res.status,
         res.url,

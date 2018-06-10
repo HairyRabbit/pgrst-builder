@@ -5,9 +5,9 @@
 import 'isomorphic-fetch'
 import { log } from '@rabbitcc/logger'
 import nock from 'nock'
-import build, { RequestError, ResponseError } from './'
 import request from './request'
 import { request as proc_req, response } from './response'
+import build, { RequestError, ResponseError } from './'
 
 test('should throw RequestError for client runtime error', () => {
   try {

@@ -34,6 +34,8 @@ export default {
     })
   ],
   externals: [
-    // '@rabbitcc/logger'
+    '@rabbitcc/logger',
+    'isomorphic-fetch',
+    'json2csv'
   ]
 }

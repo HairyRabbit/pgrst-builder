@@ -59,8 +59,11 @@ export class Build {
     /**
      * export request api
      */
-    this.get = this._request(request.get)
-    this.create = this._request(request.create)
+    this.get = this.export(request.get)
+    this.create = this.export(request.create)
+    this.destory = this.export(request.destory)
+    this.create_many = this.export(request.create_many)
+    this.destory_many = this.export(request.destory_many)
   }
 
   /**
@@ -80,9 +83,9 @@ export class Build {
   /**
    * wrapped request and apply response
    */
-  _request(req: Function) {
-    return (...args): Promise<*> => {
-      return req.apply(null, args)(this)
+  export(req: Function) {
+    return (data: Object): Promise<*> => {
+      return req(data)(this)
         .then(response.response(this.options.parser))
         .catch(response.request)
     }

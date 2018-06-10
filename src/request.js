@@ -1,5 +1,5 @@
 /**
- * Request constructor
+ * Request constructor, apply to `fetch` api
  *
  * @flow
  */
@@ -59,6 +59,9 @@ export default function request(method: string, headers: Headers = {}) {
 
       /**
        * stringify body
+       *
+       * looks like pgrst can't hold on json without stringify, see
+       * https://postgrest.org/en/stable/api.html#insertions-updates
        */
       const body = 'string' !== typeof data
             ? JSON.stringify(data)

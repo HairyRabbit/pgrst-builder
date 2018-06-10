@@ -35,9 +35,7 @@ test('should build with params and request', () => {
     .log(logger)
     .get('/foo?id=eq.42&age=not.lte.17')
     .reply(200, {
-      data: {
-        foo: 42
-      }
+      foo: 42
     })
 
   return expect(

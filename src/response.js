@@ -48,7 +48,8 @@
  */
 
 import { log, fail } from '@rabbitcc/logger'
-import type { ApiResponse } from './'
+import { Builder, RequestError, ResponseError } from './'
+import type { Parser } from './'
 
 /**
  * Handle fetch request errors, something happen like:
@@ -74,17 +75,21 @@ import type { ApiResponse } from './'
  * //=> TypeError: Failed to fetch
  * ```
  */
-export function proc_req(proc: Function) {
-  return function proc_req1(err: Error): Promise<*> {
-    /**
-     * handle CSP or network connect error
-     */
-    if(/Failed to fetch/.test(err.message)) {
-      return proc({ type: 'client-internal' })
-    }
-
-    return proc({ type: 'client-runtime' })
+export function request(err: Error): void {
+  /**
+   * handle CSP or network connect error
+   */
+  if(/Failed to fetch/.test(err.message)) {
+    throw new RequestError({
+      type: 'browser-internal',
+      error: err
+    })
   }
+
+  throw new RequestError({
+    type: 'client-internal',
+    error: err
+  })
 }
 
 /**
@@ -92,19 +97,44 @@ export function proc_req(proc: Function) {
  * apply parser for response body by content type, default to
  * `res.json()`
  */
-export function proc_res(proc: Function,
-                         parse?: Response => Promise<*>): Promise<*> {
-  return function proc_res(res: Response): void {
+export function response<T>(parse?: Parser<T>) {
+  return function response1(res: Response): ResponseError | T {
     const { ok, status, headers } = res
 
     if(!ok) {
-      proc({
-        type: 'server-runtime',
-        error: status
+      let type = null
+      if(status >= 400 && status < 500) {
+        type = 'client-runtime'
+      } else if(status >= 500) {
+        type = 'server-runtime'
+      } else {
+        throw new Error(fail(
+          '[pgrst-builder.response.make]',
+          'Response not ok, but status not in range 400 - 500',
+          `status: ${status}`,
+          `headers: ${headers}`
+        ))
+      }
+
+      /**
+       * By default if something wrong, PostgREST will send json that
+       * with a message field for error details, otherwise will send datas:
+       *
+       * ```json
+       * {
+       *   message: 'Error in $: Failed reading: not a valid json value'
+       * }
+       * ```
+       */
+      return res.json().then(({ message }) => {
+        throw new ResponseError({ type, message })
       })
     }
 
-    if(parse) {
+    /**
+     * received successful, then parse response data
+     */
+    if(undefined !== parse) {
       if('function' === typeof parse) {
         return parse(res)
       } else if(null === parse) {
@@ -112,19 +142,9 @@ export function proc_res(proc: Function,
       }
     }
 
+    /**
+     * by default, parsed by json
+     */
     return res.json()
-  }
-}
-
-/**
- * Handle logic errors, response has a error
- */
-export function proc_err(proc: Function) {
-  return function proc_err(data: ApiResponse): Promise<*> {
-    if(data.error) {
-      return proc(data.error)
-    }
-
-    return data.data || data
   }
 }

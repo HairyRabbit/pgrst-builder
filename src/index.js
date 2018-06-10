@@ -1,38 +1,53 @@
 /**
- * PostgREST request builder
+ * request builder
+ *
+ * Request builder, PostgREST friendly, also used for normal
+ * request. Build top on `fetch` API, so your browser or node
+ * should supports fetch and promise.
  *
  * Example:
  *
  * ```js
- * import Builder, { eq, not, lt } from 'pgrst-builder'
+ * import api, { eq, not, lt } from 'pgrst-builder'
  *
- * new Builder()
- *  .params(                    // set search params
- *    ['id', not(eq(42))],
- *    ['age', lt(18)]
- *  )
+ * api('/user')
+ *  .params({                   // set search params
+ *    id: not(eq(42))
+ *    age: lt(18)
+ *  })
  *  .get()                      // send request, via `fetch`
  *  .then(data => {             // handle reveived data
- *    // handle your data
+ *     // handle your data
  *  })
+ *  .catch(err => {             // handle errors
+ *     // handle errors
+ *  })
+ * ```
+ *
+ * Interface:
+ *
+ * ```js
+ * type Options = {
+ *
+ * }
  * ```
  *
  * @flow
  */
 
+export type Parser<T> = Response => Promise<T>
+
 /**
  * export options and default options
  */
-export type Options = {
+export type Options<T> = {
   protocol?: string,
   username?: ?string,
   password?: ?string,
   host?: string,
   port?: ?(string | number),
   headers?: Headers,
-  onRequestError?: Function,
-  onResponseError?: Function,
-  onResponseFailed?: Function
+  parser?: Parser<T>
 }
 
 export type Connect = {
@@ -52,16 +67,73 @@ export type ApiResponse = {
 
 export const default_options: Options = {
   protocol: 'http',
-  username: null,
-  password: null,
   host: 'localhost',
-  port: null,
   headers: {
     'Content-Type': 'application/json'
-  },
-  onRequestError: () => {},
-  onResponseError: () => {},
-  onResponseFailed: () => {}
+  }
+}
+
+/**
+ * custom errors
+ *
+ *
+ */
+
+type RequestErrorOptions = {
+  type: string,
+  error: Error
+}
+
+export class RequestError extends Error {
+  message: string
+  type: string
+
+  constructor(options: RequestErrorOptions, ...args: Array<*>) {
+    super(...args)
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, RequestError)
+    }
+
+    const { type, error } = options
+    this.type = type
+
+    switch(type) {
+      case 'browser-internal':
+        this.message = 'Something wrong with before request server' +
+          error.message
+        break
+      case 'client-internal':
+        this.message = `Can't call fetch, looks like a code bug, `  +
+          `please report it at ` +
+          'https://github.com/HairyRabbit/pgrst-builder/issues \n' +
+          error.message
+        break
+    }
+  }
+}
+
+type ResponseErrorOptions = {
+  type: string,
+  error: Error
+}
+
+export class ResponseError extends Error {
+  message: string
+  type: string
+
+  constructor(options: ResponseErrorOptions, ...args: Array<*>) {
+    super(...args)
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ResponseError)
+    }
+
+    const { type, message } = options
+
+    this.type = type
+    this.message = message
+  }
 }
 
 /**

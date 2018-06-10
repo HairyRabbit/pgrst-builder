@@ -83,9 +83,8 @@ export class Build {
   _request(req: Function) {
     return (...args): Promise<*> => {
       return req.apply(null, args)(this)
-        .then(response.proc_res(this.options.onResponseError))
-        .then(response.proc_err(this.options.onResponseFailed))
-        .catch(response.proc_req(this.options.onRequestError))
+        .then(response.response(this.options.parser))
+        .catch(response.request)
     }
   }
 }

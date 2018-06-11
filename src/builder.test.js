@@ -3,10 +3,19 @@
  */
 
 import 'isomorphic-fetch'
+import { escape } from 'querystring'
 import { log } from '@rabbitcc/logger'
 import nock from 'nock'
 import http from './builder'
-import { eq, not, lte } from './parameter'
+import {
+  eq,
+  not,
+  lte,
+  alias,
+  cast,
+  asc,
+  desc
+} from './parameter'
 
 test('should const builder', () => {
   expect(
@@ -49,5 +58,33 @@ test('should build with params and request', () => {
     {
       foo: 42
     }
+  )
+})
+
+
+/**
+ * select
+ */
+test('should apply select filed', () => {
+  expect(
+    http('foo')
+      .select('id', alias('full_name', 'fullName'), cast('name', 'text'))
+      .url.toString()
+  ).toEqual(
+    `http://localhost/foo?select=${escape('id,full_name:fullName,name::text')}`
+  )
+})
+
+
+/**
+ * order
+ */
+test('should apply order field', () => {
+  expect(
+    http('foo')
+      .order(desc('foo'), asc('bar'))
+      .url.toString()
+  ).toEqual(
+    `http://localhost/foo?order=${escape('foo.desc,bar.asc')}`
   )
 })

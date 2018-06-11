@@ -6,8 +6,8 @@
 
 import { log, fail } from '@rabbitcc/logger'
 import { Parser } from 'json2csv'
-import Builder from './builder'
-import type { Options, OperationHeader } from './'
+import { Build } from './builder'
+import type { Options } from './'
 
 /**
  * wrapped for many helpers with method and default headers
@@ -24,7 +24,9 @@ import type { Options, OperationHeader } from './'
  *   - upsert_many
  *   - destory_many
  */
-export default function request(method: string, headers?: Headers = {}) {
+export default function request<T>(method: string,
+                                   headers?: { [key: string]: string } = {},
+                                   normalize?: boolean) {
   /**
    * construct request with params, also can override options at this level
    *
@@ -36,7 +38,7 @@ export default function request(method: string, headers?: Headers = {}) {
    * request(params(['id', eq(3)])) //=> Builder => Promise<Response>
    * ```
    */
-  return function request1(data?: object, options?: Options = {}) {
+  return function request1(data?: Object, options?: Options<T> = {}) {
     /**
      * construct with builder
      *
@@ -48,10 +50,18 @@ export default function request(method: string, headers?: Headers = {}) {
      * request()(new builder()) //=> Promise<Response>
      * ```
      */
-    return function request2(builder: Builder): Promise<Response> {
+    return function request2(builder: Build<T>): Promise<Response> {
+      /**
+       * set builder.normalize
+       */
+      if(normalize) {
+        builder.normalize = true
+      }
+
       /**
        * combine options
        */
+      const build_fetch = builder.options.fetch || {}
       const fetch_opt = {
         /**
          * issue for `Set-Cookie` headers
@@ -62,7 +72,7 @@ export default function request(method: string, headers?: Headers = {}) {
         ...options,
         headers: {
           ...headers,
-          ...builder.options.fetch.headers,
+          ...build_fetch.headers,
           ...builder.options.headers,
           ...options.headers
         }
@@ -76,7 +86,7 @@ export default function request(method: string, headers?: Headers = {}) {
        *
        * bulk operation also supports CSV format, so should use
        * csv for fast parse on server. want to use this feature,
-       * need enabled `PGRST_BUILD_CSV` env.
+       * need enabled `PGRSTBUILD_CSV` env.
        */
       if(data) {
         if(process.env.PGRST_BUILD_CSV &&
@@ -107,10 +117,10 @@ const oper = { 'Prefer': 'return=representation'}
  * export helpers and alias
  */
 export const get          = request('get')
-export const create       = request('post', oper)
-export const update       = request('put', oper)
-export const upsert       = request('put', oper)
-export const destory      = request('delete', oper)
+export const create       = request('post', oper, true)
+export const update       = request('put', oper, true)
+export const upsert       = request('put', oper, true)
+export const destory      = request('delete', oper, true)
 export const create_many  = request('post', oper)
 export const update_many  = request('post', oper)
 export const upsert_many  = request('post', oper)

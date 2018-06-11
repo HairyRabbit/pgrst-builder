@@ -343,3 +343,99 @@ test('should adj', () => {
     'adj.(1,2)'
   )
 })
+
+
+/**
+ * select
+ */
+test('should set select filed', () => {
+  expect(
+    p.select('foo', 'bar')
+  ).toEqual(
+    'foo,bar'
+  )
+})
+
+test('should set select filed with default value', () => {
+  expect(
+    p.select()
+  ).toEqual(
+    '*'
+  )
+})
+
+test('should set select field with alias', () => {
+  expect(
+    p.select(p.alias('foo_bar', 'fooBar'))
+  ).toEqual(
+    'foo_bar:fooBar'
+  )
+})
+
+test('should set select filed with type casting', () => {
+  expect(
+    p.select(p.cast('foo', 'text'))
+  ).toEqual(
+    'foo::text'
+  )
+})
+
+
+/**
+ * order
+ */
+test('should format order from string', () => {
+  expect(
+    p.fmt_order('foo')
+  ).toEqual(
+    'foo'
+  )
+})
+
+test('should format order by column only', () => {
+  expect(
+    p.fmt_order({ col: 'foo' })
+  ).toEqual(
+    'foo'
+  )
+})
+
+test('should format order by order', () => {
+  expect(
+    p.fmt_order({ col: 'foo', ord: 'desc' })
+  ).toEqual(
+    'foo.desc'
+  )
+})
+
+test('should format order by null', () => {
+  expect(
+    p.fmt_order({ col: 'foo', nil: 'nullsfirst' })
+  ).toEqual(
+    'foo.nullsfirst'
+  )
+})
+
+test('should format order by order and null', () => {
+  expect(
+    p.fmt_order({ col: 'foo', ord: 'desc', nil: 'nullsfirst' })
+  ).toEqual(
+    'foo.desc.nullsfirst'
+  )
+})
+
+test('should order by string', () => {
+  expect(
+    p.order('foo', 'bar')
+  ).toEqual(
+    'foo,bar'
+  )
+})
+
+test('should order by order', () => {
+  expect(
+    p.order('foo', { col: 'bar', ord: 'asc' })
+  ).toEqual(
+    'foo,bar.asc'
+  )
+})

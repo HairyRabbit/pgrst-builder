@@ -48,8 +48,8 @@
  */
 
 import { log, fail } from '@rabbitcc/logger'
-import { Builder, RequestError, ResponseError } from './'
-import type { Parser } from './'
+import { RequestError, ResponseError } from './'
+import type { Parser, ResponseData } from './'
 
 /**
  * Handle fetch request errors, something happen like:
@@ -77,6 +77,13 @@ import type { Parser } from './'
  */
 export function request(err: Error): void {
   /**
+   * pass ResponseError
+   */
+  if(!err instanceof Error) {
+    throw err
+  }
+
+  /**
    * handle CSP or network connect error
    */
   if(/Failed to fetch/.test(err.message)) {
@@ -95,24 +102,57 @@ export function request(err: Error): void {
 /**
  * Handle response errors, the status code not 2XX. If passed,
  * apply parser for response body by content type, default to
- * `res.json()`
+ * `res.json()`. Sometimes pgrst will not return anything, like
+ * `create` operation, just return 201 status code. pass parse
+ * to `false` will just return by `Promise.resolve()`:
+ *
+ * Example:
+ *
+ * ```js
+ * api().create().then(() => {
+ *   // already create successful
+ * })
+ * ```
+ *
+ * If want get created data, should pass `{ Prefer: return=representation}`
+ * header to request, this was a default behavior.
+ *
+ * Example:
+ *
+ * ```js
+ * api.create().then(data => {
+ *   // record was created success by pg
+ * })
+ * ```
  */
-export function response<T>(parse?: Parser<T>) {
-  return function response1(res: Response): ResponseError | T {
+export function response<T>(parse?: Parser<T>, normalize?: boolean) {
+  return function response1(res: Response): ResponseData<T> {
     const { ok, status, headers } = res
 
     if(!ok) {
-      let type = null
+      let type = ''
       if(status >= 400 && status < 500) {
+        /**
+         * handle 4XX errors. Most of them are user behavior,
+         * also the client code bug.
+         */
         type = 'client-runtime'
+
       } else if(status >= 500) {
+        /**
+         * handle 5XX errors. often the server bug, should report
+         * to logger server.
+         */
         type = 'server-runtime'
+
       } else {
+        /**
+         * this should never throw
+         */
         throw new Error(fail(
-          '[pgrst-builder.response.make]',
+          '[pgrst-builder.internal]',
           'Response not ok, but status not in range 400 - 500',
-          `status: ${status}`,
-          `headers: ${headers}`
+          `status: ${status}`
         ))
       }
 
@@ -134,17 +174,34 @@ export function response<T>(parse?: Parser<T>) {
     /**
      * received successful, then parse response data
      */
-    if(undefined !== parse) {
+    let promise
+
+    if(parse || false === parse) {
       if('function' === typeof parse) {
-        return parse(res)
-      } else if(null === parse) {
-        return null
+        promise = parse(res)
+      } else if('boolean' === typeof parse) {
+        promise = parse ? res.json() : Promise.resolve()
+      } else {
+        throw new Error(fail(
+          '[pgrst-builder.response]',
+          `parse should be booelan or a function, but got ${typeof parse}`
+        ))
       }
+    } else {
+      promise = res.json()
     }
 
     /**
-     * by default, parsed by json
+     * normalize response data for single record operation
      */
-    return res.json()
+    if(normalize) {
+      return promise.then(datas => {
+        if(Array.isArray(datas)) {
+          return datas[0]
+        }
+      })
+    }
+
+    return promise
   }
 }

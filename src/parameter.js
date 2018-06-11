@@ -14,9 +14,10 @@
  */
 
 import { fail } from '@rabbitcc/logger'
+import { Build } from './builder'
 
 export default function params(...args: Array<[string, string]>) {
-  return function(builder: Builder): Builder {
+  return function(builder: *): * {
     return args.reduce((builder, params) => {
       const qs = builder.url.searchParams
       qs.set.apply(qs, params)
@@ -25,7 +26,7 @@ export default function params(...args: Array<[string, string]>) {
   }
 }
 
-export function set(key: string | string => string,
+export function set(key: string,
                     proc?: any => string = a => a,
                     mod?: (string, Array<any>) => string) {
   return function set1(...value: Array<any>): string {
@@ -49,7 +50,7 @@ export function wrap_b(brackets: string) {
   if('production' !== process.env.NODE_ENV) {
     if(!Boolean(~['()', '[]', '{}'].indexOf(brackets))) {
       throw new Error(fail(
-        '[pgrst-builder.params.make]',
+        '[pgrst-builder.params]',
         `Unknow brackets: ${brackets}`
       ))
     }
@@ -117,7 +118,6 @@ export function set_lang(value: string): string {
   return `%lang.${value}%`
 }
 
-
 /**
  * export filter
  */
@@ -132,9 +132,9 @@ export const like  = set('like', String)
 export const ilike = set('ilike', String)
 export const _in   = set('in', wrap_b('()'))
 export const is    = set('is', in_enum(['null', 'true', 'false']))
-export const fts   = set('fts', null, prelang)
-export const plfts = set('plfts', null, prelang)
-export const phfts = set('phfts', null, prelang)
+export const fts   = set('fts', undefined, prelang)
+export const plfts = set('plfts', undefined, prelang)
+export const phfts = set('phfts', undefined, prelang)
 export const cs    = set('cs', wrap_b('{}'))
 export const cd    = set('cd', wrap_b('{}'))
 export const ov    = set('ov', wrap_b('[]'))
@@ -147,4 +147,111 @@ export const adj   = set('adj', wrap_b('()'))
 /**
  * special filter
  */
-export const lang  = la => set(set_lang(la), String)
+export const lang  = (la: string) => set(set_lang(la), String)
+
+/**
+ * vertical filtering columns, for `select` param. e.g.
+ *
+ * Example:
+ *
+ * ```url
+ * GET /user?select=name,age
+ * ```
+ *
+ * So can call `select()` to add filter. can use `alias()`
+ * to defined response field name, and use `case()` to cast
+ * type.
+ *
+ * Example:
+ *
+ * ```js
+ * select('foo', alias('bar', 'baz'), case('qux', 'text'))
+ * //=> foo,bar:baz,qux::text
+ * ```
+ *
+ * By default, use `*` for all columns
+ */
+
+export function select(...items: Array<string>): string {
+  return !items.length ? '*' : items.join(',')
+}
+
+/**
+ * `select` field for alias
+ */
+export function alias(from: string, to: string): string {
+  return `${from}:${to}`
+}
+
+/**
+ * `select` filed for type convertion
+ */
+export function cast(col: string, type: string): string {
+  return `${col}::${type}`
+}
+
+/**
+ * vertical filtering columns, for `order` param. e.g.
+ *
+ * Example:
+ *
+ * ```url
+ * GET /user?order=age.desc
+ * ```
+ *
+ * By default use `asc` ordered
+ */
+type Order = {
+  col: string,
+  ord?: 'acs' | 'desc',
+  nil?: 'nullsfirst' | 'nullslast'
+}
+
+export function order(...items: Array<string | Order>): string {
+  return items.map(fmt_order).join(',')
+}
+
+/**
+ * helper function to construct flag helper
+ */
+export function order_by(key: string, flag: string) {
+  return function order_by1(col: string): Order {
+    return {
+      col,
+      [key]: flag
+    }
+  }
+}
+
+/**
+ * helper function to construct order value string
+ *
+ * Example:
+ *
+ * ```js
+ * fmt_order('foo')
+ * //=> foo
+ *
+ * fmt_order({ col: 'bar', ord: 'asc' })
+ * //=> 'bar.asc'
+ *
+ * fmt_order({ col: 'bar', nil: 'nullslast' })
+ * //=> 'bar.nullslast'
+ *
+ * fmt_order({ col: 'bar', ord: 'desc', nil: 'nullslast' })
+ * //=> 'bar.nullslast'
+ * ```
+ */
+export function fmt_order(item: string | Order): string {
+  if('string' === typeof item) {
+    return item
+  }
+
+  const { col, ord, nil } = item
+  return [col, ord, nil].filter(Boolean).join('.')
+}
+
+export const asc     = order_by('ord', 'asc')
+export const desc    = order_by('ord', 'desc')
+export const nullfst = order_by('nil', 'nullsfirst')
+export const nulllst = order_by('nil', 'nullslast')

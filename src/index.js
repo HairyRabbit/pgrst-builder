@@ -8,13 +8,15 @@
  * Example:
  *
  * ```js
- * import api, { eq, not, lt } from 'pgrst-builder'
+ * import api, { eq, not, lt, desc } from 'pgrst-builder'
  *
  * api('/user')
  *  .params({                   // set search params
  *    id: not(eq(42))
  *    age: lt(18)
  *  })
+ *  .select('name')             // set select fields
+ *  .order(desc('age'))         // set order fields
  *  .get()                      // send request, via `fetch`
  *  .then(data => {             // handle reveived data
  *     // handle your data
@@ -46,7 +48,15 @@
  * @flow
  */
 
-export type Parser<T> = Response => Promise<T>
+export type ResponseData<T> =
+  | T
+// $FlowFixMe
+  | $ElementType<T, 0>
+  | typeof undefined
+
+export type Parser<T> =
+  | (Response => Promise<ResponseData<T>>)
+  | boolean
 
 /**
  * export options and default options
@@ -57,7 +67,7 @@ export type Options<T> = {
   password?: ?string,
   host?: string,
   port?: ?(string | number),
-  headers?: Headers,
+  headers?: { [key: string]: string },
   parser?: Parser<T>,
   fetch?: Object
 }
@@ -77,7 +87,7 @@ export type ApiResponse = {
   data: string
 }
 
-export const default_options: Options = {
+export const default_options: Options<*> = {
   protocol: 'http',
   host: 'localhost',
   headers: {
@@ -129,7 +139,7 @@ export class RequestError extends Error {
 
 type ResponseErrorOptions = {
   type: string,
-  error: Error
+  message: string
 }
 
 export class ResponseError extends Error {
@@ -177,5 +187,10 @@ export {
   nxr as nxr,
   nxl as nxl,
   adj as adj,
-  not as not
+  not as not,
+  lang as lang,
+  asc as asc,
+  desc as desc,
+  nullfst as nullfst,
+  nulllst as nulllst
 } from './parameter'

@@ -50,7 +50,7 @@
 
 export type ResponseData<T> =
   | T
-// $FlowFixMe
+  // $FlowFixMe
   | $ElementType<T, 0>
   | typeof undefined
 
@@ -69,7 +69,11 @@ export type Options<T> = {
   port?: ?(string | number),
   headers?: { [key: string]: string },
   parser?: Parser<T>,
-  fetch?: Object
+  fetch?: Object,
+  prerequest: (Object, Build<T>) => boolean,
+  postrequest: (Response, Build<T>) => Response,
+  preresponse: Build<T> => boolean,
+  postresponse: Build<T> => boolean
 }
 
 export type Connect = {
@@ -85,79 +89,6 @@ export type ApiResponse = {
   error: ?string,
   message: ?string,
   data: string
-}
-
-export const default_options: Options<*> = {
-  protocol: 'http',
-  host: 'localhost',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  fetch: {}
-}
-
-/**
- * custom errors
- *
- * RequestError - for fetch error
- * ResponseError - for received failed
- */
-
-type RequestErrorOptions = {
-  type: string,
-  error: Error
-}
-
-export class RequestError extends Error {
-  message: string
-  type: string
-
-  constructor(options: RequestErrorOptions, ...args: Array<*>) {
-    super(...args)
-
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, RequestError)
-    }
-
-    const { type, error } = options
-    this.type = type
-
-    switch(type) {
-      case 'browser-internal':
-        this.message = 'Something wrong with before request server' +
-          error.message
-        break
-      case 'client-internal':
-        this.message = `Can't call fetch, looks like a code bug, `  +
-          `please report it at ` +
-          'https://github.com/HairyRabbit/pgrst-builder/issues \n' +
-          error.message
-        break
-    }
-  }
-}
-
-type ResponseErrorOptions = {
-  type: string,
-  message: string
-}
-
-export class ResponseError extends Error {
-  message: string
-  type: string
-
-  constructor(options: ResponseErrorOptions, ...args: Array<*>) {
-    super(...args)
-
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, ResponseError)
-    }
-
-    const { type, message } = options
-
-    this.type = type
-    this.message = message
-  }
 }
 
 /**

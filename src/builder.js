@@ -15,8 +15,18 @@ import * as request from './request'
 import * as response from './response'
 import params, { select, order } from './parameter'
 import conn, { pad_qs as qs } from './connector'
-import { default_options } from './'
 import type { Options, ResponseData } from './'
+
+const default_options: Options<*> = {
+  protocol: 'http',
+  host: 'localhost',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  fetch: {},
+  prerequest: () => true,
+  postrequest: res => res
+}
 
 export class Build<T> {
   endpoint: string
@@ -122,8 +132,17 @@ export class Build<T> {
    * wrapped request helper and apply response
    */
   export(req: Function) {
-    return (data: Object): Promise<ResponseData<T>> => {
-      return req(data)(this)
+    return (data: Object): void | Promise<ResponseData<T>> => {
+      const promise = req(data)(this)
+
+      /**
+       * cancel by prerequest
+       */
+      if(null === promise) {
+        return
+      }
+
+      return promise
         .then(response.response(this.options.parser, this.normalize))
         .catch(response.request)
     }

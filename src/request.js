@@ -50,7 +50,7 @@ export default function request<T>(method: string,
      * request()(new builder()) //=> Promise<Response>
      * ```
      */
-    return function request2(builder: Build<T>): Promise<Response> {
+    return function request2(builder: Build<T>): Promise<Response> | null {
       /**
        * set builder.normalize
        */
@@ -104,9 +104,21 @@ export default function request<T>(method: string,
       }
 
       /**
+       * call prerequest and postrequest lifecycle
+       */
+      const { prerequest, postrequest } = builder.options
+
+      if(prerequest && 'function' === typeof prerequest) {
+        if(!prerequest(fetch_opt, builder)) {
+          return null
+        }
+      }
+
+      /**
        * apply to fetch
        */
       return fetch(builder.url.toString(), fetch_opt)
+        .then(res => postrequest(res, builder))
     }
   }
 }

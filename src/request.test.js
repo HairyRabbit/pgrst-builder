@@ -9,20 +9,14 @@ import build from './builder'
 import params, { not, eq } from './parameter'
 import request, {
   get,
-  query,
-  select,
   create,
-  insert,
   update,
   upsert,
   destory,
-  remove,
   create_many,
-  insert_many,
   update_many,
   upsert_many,
   destory_many,
-  remove_many
 } from './request'
 
 const logger = a => log('[pgrst-builder.request.test]', a)
@@ -77,58 +71,6 @@ test('should get', () => {
   )
 })
 
-test('should query', () => {
-  nock('http://localhost')
-    .log(logger)
-    .get('/foo?bar=not.eq.42')
-    .reply(200, {
-      foo: 42
-    })
-
-  return expect(
-    query()(params(['bar', not(eq(42))])(build('/foo')))
-      .then(res => Promise.all([
-        res.status,
-        res.url,
-        res.json()
-      ]))
-  ).resolves.toEqual(
-    [
-      200,
-      'http://localhost/foo?bar=not.eq.42',
-      {
-        foo: 42
-      }
-    ]
-  )
-})
-
-test('should select', () => {
-  nock('http://localhost')
-    .log(logger)
-    .get('/foo?bar=not.eq.42')
-    .reply(200, {
-      foo: 42
-    })
-
-  return expect(
-    select()(params(['bar', not(eq(42))])(build('/foo')))
-      .then(res => Promise.all([
-        res.status,
-        res.url,
-        res.json()
-      ]))
-  ).resolves.toEqual(
-    [
-      200,
-      'http://localhost/foo?bar=not.eq.42',
-      {
-        foo: 42
-      }
-    ]
-  )
-})
-
 test('should create', () => {
   nock('http://localhost')
     .log(logger)
@@ -137,28 +79,6 @@ test('should create', () => {
 
   return expect(
     create(params())(build('/foo'))
-      .then(res => Promise.all([
-        res.status,
-        res.url,
-        res.json()
-      ]))
-  ).resolves.toEqual(
-    [
-      204,
-      'http://localhost/foo',
-      {}
-    ]
-  )
-})
-
-test('should insert', () => {
-  nock('http://localhost')
-    .log(logger)
-    .post('/foo')
-    .reply(204, {})
-
-  return expect(
-    insert(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -239,27 +159,6 @@ test('should destory', () => {
   )
 })
 
-test('should remove', () => {
-  nock('http://localhost')
-    .log(logger)
-    .delete('/foo')
-    .reply(204, {})
-
-  return expect(
-    remove(params())(build('/foo'))
-      .then(res => Promise.all([
-        res.status,
-        res.url,
-        res.json()
-      ]))
-  ).resolves.toEqual(
-    [
-      204,
-      'http://localhost/foo',
-      {}
-    ]
-  )
-})
 
 
 /**
@@ -273,28 +172,6 @@ test('should create many', () => {
 
   return expect(
     create_many(params())(build('/foo'))
-      .then(res => Promise.all([
-        res.status,
-        res.url,
-        res.json()
-      ]))
-  ).resolves.toEqual(
-    [
-      204,
-      'http://localhost/foo',
-      {}
-    ]
-  )
-})
-
-test('should insert many', () => {
-  nock('http://localhost')
-    .log(logger)
-    .post('/foo')
-    .reply(204, {})
-
-  return expect(
-    insert_many(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,
@@ -361,28 +238,6 @@ test('should destory many', () => {
 
   return expect(
     destory_many(params())(build('/foo'))
-      .then(res => Promise.all([
-        res.status,
-        res.url,
-        res.json()
-      ]))
-  ).resolves.toEqual(
-    [
-      204,
-      'http://localhost/foo',
-      {}
-    ]
-  )
-})
-
-test('should remove many', () => {
-  nock('http://localhost')
-    .log(logger)
-    .delete('/foo')
-    .reply(204, {})
-
-  return expect(
-    remove_many(params())(build('/foo'))
       .then(res => Promise.all([
         res.status,
         res.url,

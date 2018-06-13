@@ -88,3 +88,47 @@ test('should apply order field', () => {
     `http://localhost/foo?order=${escape('foo.desc,bar.asc')}`
   )
 })
+
+
+/**
+ * offset
+ */
+test('should add offset', () => {
+  expect(
+    http('foo')
+      .offset(10)
+      .url.toString()
+  ).toEqual(
+    `http://localhost/foo?offset=10`
+  )
+})
+
+test('should add offset with limit', () => {
+  expect(
+    http('foo')
+      .offset(10, 50)
+      .url.toString()
+  ).toEqual(
+    `http://localhost/foo?limit=50&offset=10`
+  )
+})
+
+test('should add offset with limit from options', () => {
+  expect(
+    http('foo', { limit: 42 })
+      .offset(10)
+      .url.toString()
+  ).toEqual(
+    `http://localhost/foo?limit=42&offset=10`
+  )
+})
+
+test('should add offset with limit override options.limit', () => {
+  expect(
+    http('foo', { limit: 42 })
+      .offset(10, 50)
+      .url.toString()
+  ).toEqual(
+    `http://localhost/foo?limit=50&offset=10`
+  )
+})

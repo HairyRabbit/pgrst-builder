@@ -5,8 +5,7 @@
 import 'isomorphic-fetch'
 import { log } from '@rabbitcc/logger'
 import nock from 'nock'
-import build from './builder'
-import http from './'
+import http, { eq } from './'
 
 const logger = a => log('[pgrst-builder.request.test]', a)
 
@@ -17,7 +16,8 @@ test('should get data from server', () => {
     .reply(200, [{ id: 1, name: 'foo' }])
 
   return expect(
-    http().get()
+    http()
+      .get()
   ).resolves.toEqual(
     [{ id: 1, name: 'foo' }]
   )
@@ -26,14 +26,15 @@ test('should get data from server', () => {
 test('should get data from server with params', () => {
   nock('http://localhost')
     .log(logger)
-    .params({
-      id: eq(1)
-    })
-    .get('/')
+    .get('/?id=eq.1')
     .reply(200, [{ id: 1, name: 'foo' }])
 
   return expect(
-    http().get()
+    http()
+      .params({
+        id: eq(1)
+      })
+      .get()
   ).resolves.toEqual(
     [{ id: 1, name: 'foo' }]
   )

@@ -24,6 +24,9 @@ const default_options: Options<*> = {
     'Content-Type': 'application/json'
   },
   fetch: {},
+  batch: {
+    url: 'batch'
+  },
   prerequest: () => true,
   postrequest: res => res
 }
@@ -33,6 +36,7 @@ export class Build<T> {
   options: Options<T>
   url: URL
   normalize: boolean
+  batch: boolean
   get: Function
   create: Function
   update: Function
@@ -42,7 +46,9 @@ export class Build<T> {
   update_many: Function
   upsert_many: Function
   destory_many: Function
-
+  body: Object
+  headers: Object
+  method: string
 
   constructor(endpoint?: string = '', options?: Options<T> = {}) {
     /**
@@ -87,29 +93,22 @@ export class Build<T> {
     /**
      * export request api
      */
-    this.get = this.export(request.get)
-    this.create = this.export(request.create)
-    this.update = this.export(request.update)
-    this.upsert = this.export(request.upsert)
-    this.destory = this.export(request.destory)
-    this.create_many = this.export(request.create_many)
-    this.update_many = this.export(request.update_many)
-    this.upsert_many = this.export(request.upsert_many)
+    this.get          = this.export(request.get)
+    this.create       = this.export(request.create)
+    this.update       = this.export(request.update)
+    this.upsert       = this.export(request.upsert)
+    this.destory      = this.export(request.destory)
+    this.create_many  = this.export(request.create_many)
+    this.update_many  = this.export(request.update_many)
+    this.upsert_many  = this.export(request.upsert_many)
     this.destory_many = this.export(request.destory_many)
   }
 
   /**
    * wrapped params constructor
    */
-  params(qs: { [key: string]: string }) {
-    const args = []
-
-    for(let key in qs) {
-      const item = qs[key]
-      args.push([key, item])
-    }
-
-    return params.apply(null, args)(this)
+  params(args: string | { [key: string]: string }) {
+    return params(args)(this)
   }
 
   /**
@@ -129,17 +128,46 @@ export class Build<T> {
   }
 
   /**
+   * offset for limits and pagination
+   *
+   * Example:
+   *
+   * ```js
+   * // basic use
+   * http().offset(10)
+   *
+   * // set limit by paramter
+   * http().offset(10, 50)
+   *
+   * // set limit by options
+   * http('ep', { limit: 50 }).offset(10)
+   * ```
+   *
+   * The `limit` paramter will overrided the `options.limit`
+   */
+  offset(num: number, limit?: number) {
+    const li = limit || this.options.limit
+    if(li) {
+      this.url.searchParams.set('limit', String(li))
+    }
+
+    this.url.searchParams.set('offset', String(num))
+
+    return this
+  }
+
+  /**
    * wrapped request helper and apply response
    */
   export(req: Function) {
-    return (data: Object): void | Promise<ResponseData<T>> => {
+    return (data: Object): * => {
       const promise = req(data)(this)
 
       /**
        * cancel by prerequest
        */
       if(null === promise) {
-        return
+        return this
       }
 
       return promise
@@ -152,7 +180,12 @@ export class Build<T> {
 /**
  * hidden constructor and export helper
  */
-export default function build<T>(endpoint?: string = '',
-                                 options?: Options<T> = {}): Build<T> {
-  return new Build(endpoint, options)
+export default function build<T>(...args: *): Build<T> {
+  return new Build(...args)
+}
+
+build.batch = function batched_build<T>(...args: *): Build<T> {
+  const build = new Build(...args)
+  build.batch = true
+  return build
 }

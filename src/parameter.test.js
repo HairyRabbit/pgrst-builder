@@ -2,6 +2,7 @@
  * @jest
  */
 
+import { unescape } from 'querystring'
 import build from './builder'
 import params, * as p from './parameter'
 
@@ -10,7 +11,10 @@ import params, * as p from './parameter'
  */
 test('should make params', () => {
   const builder = build('qux')
-  params(['foo', 'eq.42'], ['bar', 'not.gt.42'])(builder)
+  params({
+    foo: 'eq.42',
+    bar: 'not.gt.42'
+  })(builder)
 
   expect(
     builder.url.searchParams.toString()
@@ -437,5 +441,66 @@ test('should order by order', () => {
     p.order('foo', { col: 'bar', ord: 'asc' })
   ).toEqual(
     'foo,bar.asc'
+  )
+})
+
+
+/**
+ * logic
+ */
+test('should and and or', () => {
+  expect(
+    p.and(
+      p.col('foo', 'foo'),
+      p.col('bar', 'bar')
+    )
+  ).toEqual(
+    'and(foo.foo,bar.bar)'
+  )
+
+  expect(
+    p.or(
+      p.col('foo', 'foo'),
+      p.col('bar', p.eq(42))
+    )
+  ).toEqual(
+    'or(foo.foo,bar.eq.42)'
+  )
+})
+
+test('should combine or and not', () => {
+  expect(
+    p.not(p.or(
+      p.col('foo', 'foo'),
+      p.col('bar', p.not(p.eq(42)))
+    ))
+  ).toEqual(
+    'not.or(foo.foo,bar.not.eq.42)'
+  )
+})
+
+test('should col helper', () => {
+  expect(
+    p.col('foo', 'bar')
+  ).toEqual(
+    'foo.bar'
+  )
+})
+
+
+test('should prefix with logic operation', () => {
+  const builder = build('qux')
+  params(p.and(
+    p.col('id', p.eq(42)),
+    p.or(
+      p.col('name', p.eq('foo')),
+      p.col('age', p.gt(42))
+    )
+  ))(builder)
+
+  expect(
+    unescape(builder.url.searchParams.toString())
+  ).toEqual(
+    `and=(id.eq.42,or(name.eq.foo,age.gt.42))`
   )
 })

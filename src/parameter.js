@@ -1,7 +1,7 @@
 /**
  * URL search params constructor
  *
- * @example
+ * Example
  *
  * ```js
  * var builder = new Builder()
@@ -16,10 +16,59 @@
 import { fail } from '@rabbitcc/logger'
 import { Build } from './builder'
 
-export default function params(...args: Array<[string, string]>) {
+/**
+ * set build params, two way to pass paramters to params:
+ *
+ * 1. pass a map
+ * 2. by a logic oper
+ *
+ * Example:
+ *
+ * ```js
+ * // by map
+ * params({
+ *   id: eq(42),
+ *   name: eq('foo')
+ * })
+ *
+ * // by and or or
+ * params(and(
+ *   col('id', eq(42)),
+ *   col('name', eq('foo')),
+ *   or(
+ *     col('age', gt(42))
+ *   )
+ * ))
+ * ```
+ */
+export default function params(args: string | { [key: string]: string }) {
   return function(builder: *): * {
-    return args.reduce((builder, params) => {
-      const qs = builder.url.searchParams
+    const qs = builder.url.searchParams
+
+    if('string' === typeof args) {
+      const re = /^(and|or)\(/
+      const ma = args.match(re)
+
+      if(!ma) {
+        throw new Error(fail(
+
+        ))
+      }
+
+      qs.set(ma[1], args.replace(re, '('))
+      return builder
+    }
+
+    /**
+     *
+     */
+    const arr = []
+
+    for(let key in args) {
+      const item = args[key]
+      arr.push([key, item])
+    }
+    return arr.reduce((builder, params) => {
       qs.set.apply(qs, params)
       return builder
     }, builder)
@@ -40,7 +89,6 @@ export function set(key: string,
     return `${k}.${v}`
   }
 }
-
 
 export function to_s(a: any): string {
   return String(a)
@@ -148,6 +196,36 @@ export const adj   = set('adj', wrap_b('()'))
  * special filter
  */
 export const lang  = (la: string) => set(set_lang(la), String)
+
+/**
+ * `and` and `or` logic operations
+ *
+ * Exmaple
+ *
+ * ```js
+ * // /people?and=(grade.gte.90,student.is.true,or(age.gte.14,age.is.null))
+ *
+ * params(
+ *   and(
+ *     col('grade', gte(90)),
+ *     col('student', is(true)),
+ *     or(
+ *       col('age', gte(14)),
+ *       col('age', is(null))
+ *     )
+ *   )
+ * )
+ * ```
+ */
+function logic(oper: string) {
+  return function logic1(...items: Array<string>): string {
+    return `${oper}(${items.join(',')})`
+  }
+}
+
+export const and = logic('and')
+export const or  = logic('or')
+export const col = (key: string, val: string) => set(key, String)(val)
 
 /**
  * vertical filtering columns, for `select` param. e.g.

@@ -17,6 +17,7 @@
  *  })
  *  .select('name')             // set select fields
  *  .order(desc('age'))         // set order fields
+ *  .offset(2)                  // set offset for pagination
  *  .get()                      // send request, via `fetch`
  *  .then(data => {             // handle reveived data
  *     // handle your data
@@ -58,6 +59,11 @@ export type Parser<T> =
   | (Response => Promise<ResponseData<T>>)
   | boolean
 
+export type BatchOptions = {
+  url?: string,
+  headers?: { [key: string]: string }
+}
+
 /**
  * export options and default options
  */
@@ -70,10 +76,12 @@ export type Options<T> = {
   headers?: { [key: string]: string },
   parser?: Parser<T>,
   fetch?: Object,
-  prerequest: (Object, Build<T>) => boolean,
-  postrequest: (Response, Build<T>) => Response,
-  preresponse: Build<T> => boolean,
-  postresponse: Build<T> => boolean
+  limit?: number,
+  batch?: BatchOptions,
+  prerequest?: (Object, *) => boolean,
+  postrequest?: (Response, *) => Response,
+  preresponse?: * => boolean,
+  postresponse?: * => boolean
 }
 
 export type Connect = {
@@ -120,6 +128,10 @@ export {
   adj as adj,
   not as not,
   lang as lang,
+
+  /**
+   * order
+   */
   asc as asc,
   desc as desc,
   nullfst as nullfst,

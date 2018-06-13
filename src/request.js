@@ -104,6 +104,21 @@ export default function request<T>(method: string,
       }
 
       /**
+       * set to builder entity
+       */
+      builder.method  = fetch_opt.method
+      builder.headers = fetch_opt.headers
+      builder.body    = fetch_opt.body
+
+
+      /**
+       * if run on batch mode, just return
+       */
+      if(builder.batch) {
+        return null
+      }
+
+      /**
        * call prerequest and postrequest lifecycle
        */
       const { prerequest, postrequest } = builder.options
@@ -117,8 +132,13 @@ export default function request<T>(method: string,
       /**
        * apply to fetch
        */
-      return fetch(builder.url.toString(), fetch_opt)
-        .then(res => postrequest(res, builder))
+      const promise = fetch(builder.url.toString(), fetch_opt)
+
+      if(postrequest && 'function' === typeof postrequest) {
+          return promise.then(res => postrequest(res, builder))
+      }
+
+      return promise
     }
   }
 }
